@@ -78,9 +78,7 @@ class DynamicBlur(
         val scaledW = insetH + width / downscale + insetH
         val scaledH = insetV + height / downscale + insetV
 
-        if (blurBitmap.let { it == null || it.width < scaledW || it.height < scaledH })
-            reallocBlurBitmap(scaledW, scaledH)
-
+        configure(scaledW, scaledH)
         if (solidColor != 1) { // special value meaning "gonna fill it whole"
             blurBitmap!!.eraseColor(solidColor)
         }
@@ -96,16 +94,24 @@ class DynamicBlur(
             restoreToCount(save)
             if (drawn) {
                 if (Color.alpha(solidColor) == 255)
-                    blur.blurRgb(blurBitmap!!, scaledRadius, scaledW, scaledH)
+                    blur.blurRgb(blurBitmap!!, scaledRadius)
                 else
-                    blur.blurArgb(blurBitmap!!, scaledRadius, scaledW, scaledH)
+                    blur.blurArgb(blurBitmap!!, scaledRadius)
             }
         }
     }
 
-    private fun reallocBlurBitmap(blurW: Int, blurH: Int) {
-        blurBitmap?.recycle()
-        blurBitmap = Bitmap.createBitmap(blurW, blurH, Bitmap.Config.ARGB_8888)
-        blurCanvas.setBitmap(blurBitmap)
+    private fun configure(width: Int, height: Int) {
+        val bitmap = blurBitmap
+        if (bitmap == null || ((bitmap.width != width || bitmap.height != height) && !tryReconfigure(width, height))) {
+            bitmap?.recycle()
+            blurBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            blurCanvas.setBitmap(blurBitmap)
+        }
     }
+    private fun tryReconfigure(width: Int, height: Int) =
+            blurBitmap!!.allocationByteCount >= (width * height * 4) &&
+                try { blurBitmap!!.reconfigure(width, height, Bitmap.Config.ARGB_8888); true }
+                catch (e: IllegalArgumentException) { false }
+
 }

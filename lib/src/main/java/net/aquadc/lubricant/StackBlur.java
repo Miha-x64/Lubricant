@@ -3,6 +3,7 @@ package net.aquadc.lubricant;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import androidx.annotation.AnyThread;
@@ -10,7 +11,12 @@ import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.WorkerThread;
 
+import java.nio.IntBuffer;
 import java.util.Arrays;
+
+import static java.lang.Math.abs;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 /**
  * This is copied from a <a href="https://stackoverflow.com/a/10028267/3050249">StackOverflow answer</a>
@@ -29,6 +35,7 @@ public final class StackBlur {
     private int[] rgb;
     private int[] vmin;
     private int[] stack;
+    private IntBuffer pixBuf;
 
     @WorkerThread public StackBlur() { // for main thread, use static .stackBlur()
     }
@@ -42,15 +49,17 @@ public final class StackBlur {
      * the following line:
      * Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>
      */
-    public void blurRgb(@NonNull Bitmap bitmap, @IntRange(from = 1) int radius, int w, int h) {
-        if (radius < 1) throw new IllegalArgumentException("radius < 1: " + radius);
+    public void blurRgb(@NonNull Bitmap bitmap, @IntRange(from = 1) int radius) {
+        check(bitmap, radius, false);
 
         int div = radius + radius + 1;
+        int w = bitmap.getWidth(), h = bitmap.getHeight();
         prepareBuffers(w, h, div);
         int[] pix = this.pix, rgb = this.rgb, vmin = this.vmin, stack = this.stack;
 
         int rsum, gsum, bsum, x, y, i, p, yp, yi = 0, yw = 0;
-        bitmap.getPixels(pix, 0, w, 0, 0, w, h);
+        bitmap.copyPixelsToBuffer(pixBuf);
+        pixBuf.rewind();
 
         int ptr, start;
         int sir, rsir, gsir, bsir;
@@ -66,12 +75,12 @@ public final class StackBlur {
         for (y = 0; y < h; y++) {
             rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
             for (i = -radius; i <= radius; i++) {
-                stack[i + radius] = p = pix[yi + Math.min(wm, Math.max(i, 0))];
+                stack[i + radius] = p = pix[yi + min(wm, max(i, 0))];
                 rsir = (p & 0xFF0000) >> 16;
                 gsir = (p & 0x00FF00) >> 8;
                 bsir = (p & 0x0000FF);
 
-                rbs = r1 - Math.abs(i);
+                rbs = r1 - abs(i);
                 rsum += rsir * rbs;
                 gsum += gsir * rbs;
                 bsum += bsir * rbs;
@@ -104,7 +113,7 @@ public final class StackBlur {
                 boutsum -= (sir & 0x0000FF);
 
                 if (y == 0)
-                    vmin[x] = Math.min(x + radius + 1, wm);
+                    vmin[x] = min(x + radius + 1, wm);
 
                 stack[start % div] = p = pix[yw + vmin[x]];
                 rsir = (p & 0xFF0000) >> 16;
@@ -141,7 +150,7 @@ public final class StackBlur {
             rinsum = ginsum = binsum = routsum = goutsum = boutsum = rsum = gsum = bsum = 0;
             yp = -radius * w;
             for (i = -radius; i <= radius; i++) {
-                yi = Math.max(0, yp) + x;
+                yi = max(0, yp) + x;
 
                 int c = stack[i + radius] = rgb[yi];
 
@@ -149,7 +158,7 @@ public final class StackBlur {
                 gsir = (c & 0x00FF00) >> 8;
                 bsir = (c & 0x0000FF);
 
-                rbs = r1 - Math.abs(i);
+                rbs = r1 - abs(i);
 
                 rsum += rsir * rbs;
                 gsum += gsir * rbs;
@@ -187,7 +196,7 @@ public final class StackBlur {
                 goutsum -= (sir & 0x00FF00) >> 8;
                 boutsum -= (sir & 0x0000FF);
 
-                if (x == 0) vmin[y] = Math.min(y + r1, hm) * w;
+                if (x == 0) vmin[y] = min(y + r1, hm) * w;
                 p = x + vmin[y];
 
                 int c = stack[start % div] = rgb[p];
@@ -219,7 +228,8 @@ public final class StackBlur {
             }
         }
 
-        bitmap.setPixels(pix, 0, w, 0, 0, w, h);
+        bitmap.copyPixelsFromBuffer(pixBuf);
+        pixBuf.rewind();
     }
 
     /**
@@ -229,15 +239,18 @@ public final class StackBlur {
      * the following line:
      * Stack Blur Algorithm by Mario Klingemann <mario@quasimondo.com>
      */
-    public void blurArgb(@NonNull Bitmap bitmap, @IntRange(from=1) int radius, int w, int h) {
-        if (radius < 1) throw new IllegalArgumentException("radius < 1: " + radius);
+    public void blurArgb(@NonNull Bitmap bitmap, @IntRange(from=1) int radius) {
+        check(bitmap, radius, true);
 
         int div = radius + radius + 1;
+        int w = bitmap.getWidth(), h = bitmap.getHeight();
         prepareBuffers(w, h, div);
         int[] pix = this.pix, rgb = this.rgb, vmin = this.vmin, stack = this.stack;
 
         int rsum, gsum, bsum, asum, x, y, i, p, yp, yi = 0, yw = 0;
-        bitmap.getPixels(pix, 0, w, 0, 0, w, h);
+
+        bitmap.copyPixelsToBuffer(pixBuf);
+        pixBuf.rewind();
 
         int ptr, start;
         int sir, asir, rsir, gsir, bsir;
@@ -253,13 +266,13 @@ public final class StackBlur {
         for (y = 0; y < h; y++) {
             rinsum = ginsum = binsum = ainsum = routsum = goutsum = boutsum = aoutsum = rsum = gsum = bsum = asum = 0;
             for (i = -radius; i <= radius; i++) {
-                stack[i + radius] = p = pix[yi + Math.min(wm, Math.max(i, 0))];
+                stack[i + radius] = p = pix[yi + min(wm, max(i, 0))];
                 asir = (p & 0xFF000000) >>> 24;
                 rsir = (p & 0xFF0000) >> 16;
                 gsir = (p & 0x00FF00) >> 8;
                 bsir = (p & 0x0000FF);
 
-                rbs = r1 - Math.abs(i);
+                rbs = r1 - abs(i);
                 asum += asir * rbs;
                 rsum += rsir * rbs;
                 gsum += gsir * rbs;
@@ -298,7 +311,7 @@ public final class StackBlur {
                 boutsum -= (sir & 0x0000FF);
 
                 if (y == 0)
-                    vmin[x] = Math.min(x + radius + 1, wm);
+                    vmin[x] = min(x + radius + 1, wm);
 
                 stack[start % div] = p = pix[yw + vmin[x]];
 
@@ -342,7 +355,7 @@ public final class StackBlur {
             rinsum = ginsum = binsum = ainsum = routsum = goutsum = boutsum = aoutsum = rsum = gsum = bsum = asum = 0;
             yp = -radius * w;
             for (i = -radius; i <= radius; i++) {
-                yi = Math.max(0, yp) + x;
+                yi = max(0, yp) + x;
 
                 int c = stack[i + radius] = rgb[yi];
 
@@ -351,7 +364,7 @@ public final class StackBlur {
                 gsir = (c & 0x00FF00) >> 8;
                 bsir = (c & 0x0000FF);
 
-                rbs = r1 - Math.abs(i);
+                rbs = r1 - abs(i);
 
                 asum += asir * rbs;
                 rsum += rsir * rbs;
@@ -393,7 +406,7 @@ public final class StackBlur {
                 goutsum -= (sir & 0x00FF00) >> 8;
                 boutsum -= (sir & 0x0000FF);
 
-                if (x == 0) vmin[y] = Math.min(y + r1, hm) * w;
+                if (x == 0) vmin[y] = min(y + r1, hm) * w;
                 p = x + vmin[y];
 
                 int c = stack[start % div] = rgb[p];
@@ -430,13 +443,23 @@ public final class StackBlur {
             }
         }
 
-        bitmap.setPixels(pix, 0, w, 0, 0, w, h);
+        bitmap.copyPixelsFromBuffer(pixBuf);
+        pixBuf.rewind();
     }
 
+    private static void check(Bitmap bitmap, int radius, boolean alpha) {
+        if (radius < 1)
+            throw new IllegalArgumentException("radius < 1: " + radius);
+        if (bitmap.getConfig() != Bitmap.Config.ARGB_8888)
+            throw new UnsupportedOperationException("ARGB_8888 bitmap required, got " + bitmap.getConfig());
+        if (alpha && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && !bitmap.isPremultiplied())
+            throw new UnsupportedOperationException("premultiplied bitmap required");
+    }
     private void prepareBuffers(int w, int h, int div) {
         int wh = w * h;
         if (pix == null || pix.length < wh) {
             pix = new int[wh];
+            pixBuf = IntBuffer.wrap(pix);
             rgb = new int[wh];
         } else {
             // Bitmap#getPixels will fill pix[]
@@ -452,6 +475,7 @@ public final class StackBlur {
 
     public void trimMemory() {
         pix = null;
+        pixBuf = null;
         rgb = null;
         vmin = null;
         stack = null;
