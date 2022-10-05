@@ -1,8 +1,10 @@
 package net.aquadc.lubricant.demo
 
+import android.animation.ObjectAnimator
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.Context
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.view.View
 import android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -12,12 +14,9 @@ import android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
 import android.view.ViewGroup
 import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
 import android.widget.ImageView
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.RecyclerView
-import net.aquadc.lubricant.blurDrawable
+import net.aquadc.lubricant.ViewBlurDrawable
 import net.aquadc.lubricant.view.PostEffectRecyclerView
-import kotlin.math.max
 
 class MainActivity : Activity() {
 
@@ -38,36 +37,32 @@ class MainActivity : Activity() {
             )
             override fun getItemCount(): Int = icons.size
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
-                object : RecyclerView.ViewHolder(object : ImageView(parent.context) {
-                    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-                        val size = MeasureSpec.getSize(widthMeasureSpec)
-                        setMeasuredDimension(size, size)
+                DumbViewHolder(SquareImageView(parent.context)).also { vh ->
+                    vh.itemView.setOnClickListener {
+                        val pos = vh.bindingAdapterPosition
+                        if (pos >= 0) {
+                            val contentBlur = findViewById<MainLayout>(R.id.root).contentBlur
+                            AlertDialog.Builder(it.context)
+                                .setView(SquareImageView(it.context).also { it.setImageResource(icons[pos]) })
+                                .setOnDismissListener {
+                                    ObjectAnimator.ofInt(contentBlur, ViewBlurDrawable.RADIUS, 20.dp, 0).setDuration(200).start()
+                                }
+                                .show()
+                            ObjectAnimator.ofInt(contentBlur, ViewBlurDrawable.RADIUS, 0, 20.dp).setDuration(200).start()
+                        }
                     }
-                }) {}
+                }
             override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
                 (holder.itemView as ImageView).setImageResource(icons[position])
             }
         }
+    }
 
-        val status = findViewById<View>(R.id.status)
-        status.background = LayerDrawable(arrayOf(list.blurDrawable(20.dp), ColorDrawable(0x40FFFFFF)))
-
-        val nav = findViewById<View>(R.id.nav)
-        val navBlur = list.blurDrawable(20.dp)
-        nav.background = LayerDrawable(arrayOf(navBlur, ColorDrawable(0x40000000)))
-        nav.viewTreeObserver.addOnGlobalLayoutListener {
-            navBlur.srcOffsetY = nav.top
-        }
-
-        var top = 0
-        var bottom = 0
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root)) { _, insets ->
-            top = max(top, insets.getInsets(WindowInsetsCompat.Type.statusBars()).top)
-            bottom = max(bottom, insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom)
-            status.layoutParams = status.layoutParams.also { it.height = top }
-            nav.layoutParams = nav.layoutParams.also { it.height = bottom }
-            list.setPadding(0, top, 0, bottom)
-            WindowInsetsCompat.CONSUMED
+    class DumbViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+    class SquareImageView(context: Context) : ImageView(context) {
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            val size = MeasureSpec.getSize(widthMeasureSpec)
+            setMeasuredDimension(size, size)
         }
     }
 

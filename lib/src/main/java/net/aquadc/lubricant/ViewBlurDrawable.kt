@@ -16,6 +16,7 @@ import androidx.annotation.Px
 import net.aquadc.lubricant.StackBlur.stackBlur
 import net.aquadc.lubricant.view.PostEffectRecyclerView
 import net.aquadc.lubricant.view.PostEffectView
+import net.aquadc.lubricant.view.addPostEffect
 
 class ViewBlurDrawable(
     private val source: PostEffectView,
@@ -24,6 +25,7 @@ class ViewBlurDrawable(
     verticalScroll: Boolean,
     downscale: Int,
     blur: StackBlur = stackBlur(),
+    private val clipOut: Boolean = true,
 ) : Drawable(), PostEffect {
 
     var srcOffsetX: Int = 0
@@ -57,6 +59,9 @@ class ViewBlurDrawable(
     var radius: Int
         get() = blur.radius
         set(value) {
+            if ((blur.radius == 0) != (value == 0)) {
+                source.requestRedraw()
+            }
             blur.radius = value
             if (blur.isDirty) {
                 invalidateSelf()
@@ -65,9 +70,8 @@ class ViewBlurDrawable(
 
     override fun draw(canvas: Canvas) {
         val bnds = bounds
-        if (bnds.isEmpty || srcOffsetX >= source.getWidth() || srcOffsetY >= source.getHeight()) {
+        if (bnds.isEmpty || srcOffsetX >= source.getWidth() || srcOffsetY >= source.getHeight() || radius == 0)
             return
-        }
         blur.draw(
             canvas,
             bnds.left, bnds.top,
@@ -80,6 +84,8 @@ class ViewBlurDrawable(
     override fun getAlpha(): Int = paint.alpha
     override fun setAlpha(alpha: Int) {
         if (paint.alpha != alpha) {
+            if ((paint.alpha == 255) != (alpha == 255))
+                source.requestRedraw()
             paint.alpha = alpha
             invalidateSelf()
         }
@@ -122,11 +128,13 @@ class ViewBlurDrawable(
     }
 
     override fun clipOut(canvas: Canvas) {
+        if (!clipOut) return
+
         // We don't need our view to draw post-effect-affected area.
         // This is super important without solidColor where blur overlay is transparent;
         // otherwise, just gonna shrink drawing area and save cycles.
         val bnds = bounds
-        if (bnds.isEmpty || srcOffsetX >= source.getWidth() || srcOffsetY >= source.getHeight())
+        if (bnds.isEmpty || srcOffsetX >= source.getWidth() || srcOffsetY >= source.getHeight() || radius == 0 || paint.alpha != 255)
             return
         val right = srcOffsetX + bnds.width()
         val bottom = srcOffsetY + bnds.height()
@@ -171,6 +179,7 @@ fun PostEffectRecyclerView.blurDrawable(
     @Px radius: Int,
     downscale: Int = (resources.displayMetrics.density + .5f).toInt(),
     blur: StackBlur = stackBlur(),
+    clipOut: Boolean = true,
 ): ViewBlurDrawable {
     return ViewBlurDrawable(
         this,
@@ -178,11 +187,8 @@ fun PostEffectRecyclerView.blurDrawable(
         (layoutManager ?: throw NullPointerException("Set RecyclerView#layoutManager first")).canScrollHorizontally(),
         layoutManager!!.canScrollVertically(),
         downscale,
-        blur
-    ).also {
-        postEffect =
-            if (postEffect == null) it
-            else PostEffectPair(postEffect!!, it)
-    }
+        blur,
+        clipOut,
+    ).also(this::addPostEffect)
 }
 

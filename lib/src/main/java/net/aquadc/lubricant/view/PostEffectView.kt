@@ -4,6 +4,7 @@ import android.graphics.Canvas
 import androidx.annotation.ColorInt
 import androidx.annotation.Px
 import net.aquadc.lubricant.PostEffect
+import net.aquadc.lubricant.PostEffectPair
 
 /**
  * Background aware, invalidation tracking, postEffect-enabled View, Drawable or whatever.
@@ -21,4 +22,10 @@ interface PostEffectView {
     fun drawFully(canvas: Canvas)
     fun requestRedraw()
 
+}
+
+fun PostEffectView.addPostEffect(effect: PostEffect) {
+    postEffect =
+        if (postEffect == null) effect
+        else PostEffectPair(postEffect!!, effect)
 }
