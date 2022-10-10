@@ -3,7 +3,6 @@ package net.aquadc.lubricant;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import androidx.annotation.AnyThread;
@@ -452,7 +451,7 @@ public final class StackBlur {
             throw new IllegalArgumentException("radius < 1: " + radius);
         if (bitmap.getConfig() != Bitmap.Config.ARGB_8888)
             throw new UnsupportedOperationException("ARGB_8888 bitmap required, got " + bitmap.getConfig());
-        if (alpha && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && !bitmap.isPremultiplied())
+        if (alpha && !bitmap.isPremultiplied())
             throw new UnsupportedOperationException("premultiplied bitmap required");
     }
     private void prepareBuffers(int w, int h, int div) {

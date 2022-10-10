@@ -7,7 +7,7 @@ android {
     compileSdk 32
 
     defaultConfig {
-        minSdk 16
+        minSdk 19 // Bitmap#getAllocationByteCount and #reconfigure
         targetSdk 32
     }
 
