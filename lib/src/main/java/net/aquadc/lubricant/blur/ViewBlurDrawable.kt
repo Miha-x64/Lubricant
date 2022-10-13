@@ -205,7 +205,7 @@ class ViewBlurDrawable(
 
 fun PostEffectRecyclerView.blurDrawable(
     @Px radius: Int,
-    downscale: Int = (resources.displayMetrics.density + .5f).toInt(),
+    downscale: Int = (2 * resources.displayMetrics.density + .5f).toInt(),
     outline: OutlineShape = RectOutline,
     blur: StackBlur = stackBlur(),
     clipOut: Boolean = true,
