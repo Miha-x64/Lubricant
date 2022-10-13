@@ -1,6 +1,21 @@
 
 Yet another dynamic blur library.
 
+```gradle
+// root build.gradle
+allprojects {
+    repositories {
+        ...
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+// app/build.gradle
+repositories {
+    implementation("com.github.Miha-x64:Lubricant:852f8498f1")
+}
+```
+
 ### Motivation?
 
 Most libraries use RenderScript which shows poor performance to me. Also, most of them use `onPreDraw` as invalidation listener catching all invalidations across the window.
