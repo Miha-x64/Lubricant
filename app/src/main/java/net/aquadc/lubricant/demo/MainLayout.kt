@@ -7,8 +7,8 @@ import android.util.AttributeSet
 import android.view.ViewGroup
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import net.aquadc.lubricant.ViewBlurDrawable
-import net.aquadc.lubricant.blurDrawable
+import net.aquadc.lubricant.blur.ViewBlurDrawable
+import net.aquadc.lubricant.blur.blurDrawable
 import net.aquadc.lubricant.view.PostEffectRecyclerView
 import kotlin.math.max
 

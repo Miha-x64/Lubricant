@@ -1,4 +1,4 @@
-package net.aquadc.lubricant
+package net.aquadc.lubricant.blur
 
 import android.graphics.Canvas
 import android.graphics.Color
@@ -13,7 +13,8 @@ import android.util.IntProperty
 import android.util.Property
 import android.view.View
 import androidx.annotation.Px
-import net.aquadc.lubricant.StackBlur.stackBlur
+import net.aquadc.lubricant.PostEffect
+import net.aquadc.lubricant.blur.StackBlur.stackBlur
 import net.aquadc.lubricant.view.PostEffectRecyclerView
 import net.aquadc.lubricant.view.PostEffectView
 

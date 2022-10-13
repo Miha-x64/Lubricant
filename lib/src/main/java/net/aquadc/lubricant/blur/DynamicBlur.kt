@@ -1,4 +1,4 @@
-package net.aquadc.lubricant
+package net.aquadc.lubricant.blur
 
 import android.graphics.Bitmap
 import android.graphics.Canvas

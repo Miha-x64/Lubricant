@@ -15,7 +15,7 @@ import android.view.ViewGroup
 import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
-import net.aquadc.lubricant.ViewBlurDrawable
+import net.aquadc.lubricant.blur.ViewBlurDrawable
 import net.aquadc.lubricant.view.PostEffectRecyclerView
 
 class MainActivity : Activity() {
