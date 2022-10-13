@@ -16,7 +16,6 @@ import androidx.annotation.Px
 import net.aquadc.lubricant.StackBlur.stackBlur
 import net.aquadc.lubricant.view.PostEffectRecyclerView
 import net.aquadc.lubricant.view.PostEffectView
-import net.aquadc.lubricant.view.addPostEffect
 
 class ViewBlurDrawable(
     private val source: PostEffectView,
@@ -189,6 +188,6 @@ fun PostEffectRecyclerView.blurDrawable(
         downscale,
         blur,
         clipOut,
-    ).also(this::addPostEffect)
+    ).also { this += it }
 }
 

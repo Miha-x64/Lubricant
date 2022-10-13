@@ -13,7 +13,8 @@ import androidx.annotation.CallSuper
 import androidx.annotation.ColorInt
 import androidx.recyclerview.widget.RecyclerView
 import net.aquadc.lubricant.PostEffect
-import net.aquadc.lubricant.invalidateChildInParent
+import net.aquadc.lubricant.removeReferent
+import java.lang.ref.WeakReference
 
 open class PostEffectRecyclerView(context: Context, attrs: AttributeSet?) : RecyclerView(context, attrs), PostEffectView {
 
@@ -24,35 +25,39 @@ open class PostEffectRecyclerView(context: Context, attrs: AttributeSet?) : Recy
         _solidColor = if (Color.alpha(color) == 255) color else 0
     }
 
-    override var postEffect: PostEffect? = null
+    private var effects: ArrayList<WeakReference<PostEffect>>? = null
+    override fun plusAssign(effect: PostEffect) {
+        (effects ?: ArrayList<WeakReference<PostEffect>>().also { effects = it }).add(WeakReference(effect))
+    }
+    override fun minusAssign(effect: PostEffect) {
+        effects?.removeReferent(effect)
+    }
 
     @CallSuper override fun onDescendantInvalidated(child: View, target: View) {
         super.onDescendantInvalidated(child, target)
-        postEffect?.takeIf { !it.isDirty }?.onInvalidated(child)
+        effects?.onInvalidated(child)
     }
 
     @Suppress("OVERRIDE_DEPRECATION")
     @CallSuper override fun invalidateChildInParent(location: IntArray?, dirty: Rect?): ViewParent? {
         @Suppress("DEPRECATION") val parent = super.invalidateChildInParent(location, dirty)
-        postEffect?.invalidateChildInParent(this)
+        effects?.invalidateChildInParent(this)
         return parent
     }
 
     override fun invalidateDrawable(drawable: Drawable) {
         super.invalidateDrawable(drawable)
-        postEffect?.takeIf { !it.isDirty && verifyDrawable(drawable) }?.onInvalidated(null)
+        if (verifyDrawable(drawable))
+            effects?.onInvalidated(null)
     }
-
     @CallSuper override fun invalidate() {
         super.invalidate()
-        postEffect?.takeIf { !it.isDirty }?.onInvalidated(null)
+        effects?.onInvalidated(null)
     }
-
     final override fun draw(c: Canvas) {
-        postEffect?.clipOut(c)
+        effects?.clipOut(c)
         super.draw(c)
     }
-
     final override fun drawFully(canvas: Canvas) {
         super.draw(canvas)
     }

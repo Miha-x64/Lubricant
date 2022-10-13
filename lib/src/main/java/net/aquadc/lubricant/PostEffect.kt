@@ -22,25 +22,6 @@ interface PostEffect {
     fun clipOut(canvas: Canvas)
 }
 
-internal class PostEffectPair(
-    private val first: PostEffect,
-    private val second: PostEffect,
-) : PostEffect {
-
-    override val isDirty: Boolean
-        get() = first.isDirty && second.isDirty
-
-    override fun onInvalidated(child: View?): Boolean =
-        (first.isDirty || first.onInvalidated(child)) &&
-            (second.isDirty || second.onInvalidated(child))
-
-    override fun clipOut(canvas: Canvas) {
-        first.clipOut(canvas)
-        second.clipOut(canvas)
-    }
-
-}
-
 fun PostEffect.invalidateChildInParent(parent: ViewGroup) {
     if (isDirty) return
     for (i in 0 until parent.childCount)
