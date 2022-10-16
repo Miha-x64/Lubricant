@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewParent
+import androidx.annotation.AttrRes
 import androidx.annotation.CallSuper
 import androidx.annotation.ColorInt
 import androidx.recyclerview.widget.RecyclerView
@@ -16,7 +17,10 @@ import net.aquadc.lubricant.PostEffect
 import net.aquadc.lubricant.removeReferent
 import java.lang.ref.WeakReference
 
-open class PostEffectRecyclerView(context: Context, attrs: AttributeSet?) : RecyclerView(context, attrs), PostEffectView {
+open class PostEffectRecyclerView : RecyclerView, PostEffectView {
+    constructor(context: Context) : super(context)
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
+    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(context, attrs, defStyleAttr)
 
     private var _solidColor: Int = 0
     @Suppress("DEPRECATION") final override fun getSolidColor(): Int =

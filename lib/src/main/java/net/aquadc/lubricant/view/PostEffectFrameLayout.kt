@@ -6,17 +6,27 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewParent
 import android.widget.FrameLayout
+import androidx.annotation.AttrRes
 import androidx.annotation.CallSuper
 import androidx.annotation.ColorInt
+import androidx.annotation.RequiresApi
+import androidx.annotation.StyleRes
 import net.aquadc.lubricant.PostEffect
 import net.aquadc.lubricant.removeReferent
 import java.lang.ref.WeakReference
 
-open class PostEffectFrameLayout(context: Context, attrs: AttributeSet?) : FrameLayout(context, attrs), PostEffectView {
+open class PostEffectFrameLayout : FrameLayout, PostEffectView {
+    constructor(context: Context) : super(context)
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
+    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int) : super(context, attrs, defStyleAttr)
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    constructor(context: Context, attrs: AttributeSet?, @AttrRes defStyleAttr: Int, @StyleRes defStyleRes: Int) :
+        super(context, attrs, defStyleAttr, defStyleRes)
 
     private var _solidColor: Int = 0
     @Suppress("DEPRECATION") final override fun getSolidColor(): Int =
