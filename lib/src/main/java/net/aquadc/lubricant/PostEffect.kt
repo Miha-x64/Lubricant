@@ -7,8 +7,6 @@ import android.view.ViewGroup
 
 interface PostEffect {
 
-    val isDirty: Boolean
-
     /**
      * Receive invalidation notification.
      * @param child which child was invalidated, or null, if it was the whole view
@@ -23,7 +21,6 @@ interface PostEffect {
 }
 
 fun PostEffect.invalidateChildInParent(parent: ViewGroup) {
-    if (isDirty) return
     for (i in 0 until parent.childCount)
         if (parent.getChildAt(i).let { it.isDirty && onInvalidated(it) })
             break

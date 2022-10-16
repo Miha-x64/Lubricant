@@ -30,7 +30,7 @@ interface PostEffectView {
 }
 
 internal fun ArrayList<WeakReference<PostEffect>>.onInvalidated(child: View?) {
-    forEachReferent { if (!it.isDirty) it.onInvalidated(child) }
+    forEachReferent { it.onInvalidated(child) }
 }
 internal fun ArrayList<WeakReference<PostEffect>>.invalidateChildInParent(parent: ViewGroup) {
     forEachReferent { it.invalidateChildInParent(parent) }

@@ -1,5 +1,6 @@
 package net.aquadc.lubricant.blur
 
+import android.animation.ValueAnimator
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorFilter
@@ -30,6 +31,7 @@ class ViewBlurDrawable(
     downscale: Int,
     blur: StackBlur = stackBlur(),
     private val clipOut: Boolean = true,
+    private val followPowerSave: Boolean = true,
 ) : Drawable(), PostEffect {
 
     var outline: OutlineShape = outline
@@ -64,11 +66,12 @@ class ViewBlurDrawable(
         }
 
     private fun bndsChg() {
-        if (useful()) {
-            if (clipOut)
-                source.requestRedraw()
-            invalidateSelf()
-        }
+        if (clipOut && (isEnabled() or updateEnabled()))
+            // useful->useless=>disable clipOut
+            // useful->useful=>bounds changed
+            // useless->useful=>enable clipOut
+            source.requestRedraw()
+        invalidateSelf()
     }
 
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
@@ -85,18 +88,20 @@ class ViewBlurDrawable(
     var radius: Int
         get() = blur.radius
         set(value) {
-            val u = useful()
-            blur.radius = value
-            if (clipOut && u != useful()) {
-                source.requestRedraw() // we're either appeared or disappeared, start or stop clipping source
-            }
-            if (blur.isDirty) {
-                invalidateSelf()
+            if (blur.radius != value) {
+                val e = isEnabled()
+                blur.radius = value
+                if (clipOut && e != updateEnabled())
+                    source.requestRedraw() // we're either appeared or disappeared, start or stop clipping source
+                if (blur.isDirty) // blur.scaledRadius may not change due to downscaling
+                    invalidateSelf()
             }
         }
 
+    private var powerSave: Boolean =
+        followPowerSave && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !ValueAnimator.areAnimatorsEnabled()
     override fun draw(canvas: Canvas) {
-        if (!useful())
+        if (!updateEnabled())
             return
         val bnds = bounds
         outline.clip(canvas, bnds.left, bnds.top, bnds.right, bnds.bottom)
@@ -112,9 +117,9 @@ class ViewBlurDrawable(
     override fun getAlpha(): Int = paint.alpha
     override fun setAlpha(alpha: Int) {
         if (paint.alpha != alpha) {
-            val u = useful()
+            val e = isEnabled()
             paint.alpha = alpha
-            if (u != useful())
+            if (clipOut && e != updateEnabled())
                 source.requestRedraw()
             invalidateSelf()
         }
@@ -131,22 +136,20 @@ class ViewBlurDrawable(
         else PixelFormat.TRANSLUCENT
 
     override fun setBounds(left: Int, top: Int, right: Int, bottom: Int) {
-        val oldU = useful()
+        val oldE = isEnabled()
         val old = bounds
         val chg = old.left != left || old.top != top || old.right != right || old.bottom != bottom
         val oldW = old.width()
         val oldH = old.height()
         super.setBounds(left, top, right, bottom)
-        val newU = useful()
-        if (clipOut && (oldU != newU || (newU && chg)))
+        val newE = updateEnabled()
+        if (clipOut && (oldE != newE || (newE && chg)))
+        //   (dis)appearance ^^      or       ^^ bounds change when visible
             source.requestRedraw()
         if (bounds.width() > oldW || bounds.height() > oldH) {
             invalidateSelf()
         }
     }
-
-    override val isDirty: Boolean
-        get() = blur.isDirty
 
     private val rect = Rect()
     override fun onInvalidated(child: View?): Boolean {
@@ -159,24 +162,31 @@ class ViewBlurDrawable(
     }
 
     override fun clipOut(canvas: Canvas) {
-        if (!clipOut) return
+        if (!(clipOut && updateEnabled())) return
 
         // We don't need our view to draw post-effect-affected area.
         // This is super important without solidColor where blur overlay is transparent;
         // otherwise, just gonna shrink drawing area and save cycles.
         val bnds = bounds
-        if (bnds.isEmpty || srcOffsetX >= source.getWidth() || srcOffsetY >= source.getHeight() || radius == 0 || paint.alpha != 255)
-            return
         val right = srcOffsetX + bnds.width()
         val bottom = srcOffsetY + bnds.height()
         outline.clipOut(canvas, srcOffsetX, srcOffsetY, right, bottom)
     }
 
-    private fun useful(): Boolean =
+    private fun isEnabled(): Boolean =
 // isVisible == false when our callback/View is absent, INVISIBLE, GONE, or detached.
 // This check would save some miserable cycles in rare scenarios but break some existing screen-shooting code, skip it.
-        !bounds.isEmpty && srcOffsetX < source.getWidth() && srcOffsetY < source.getHeight() &&
+        !powerSave && !bounds.isEmpty && srcOffsetX < source.getWidth() && srcOffsetY < source.getHeight() &&
             blur.radius > 0 && paint.alpha > 0
+    private fun updateEnabled(): Boolean {
+        if (followPowerSave &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            powerSave == ValueAnimator.areAnimatorsEnabled()) { // powerSave != areAnimatorsDisabled
+            powerSave = !powerSave
+            invalidateSelf() // source view invalidation falls here through clipOut(), follow
+        }
+        return isEnabled()
+    }
 
     companion object {
         @JvmField val RADIUS: Property<ViewBlurDrawable, Int> =
@@ -209,15 +219,13 @@ fun PostEffectRecyclerView.blurDrawable(
     outline: OutlineShape = RectOutline,
     blur: StackBlur = stackBlur(),
     clipOut: Boolean = true,
+    followPowerSave: Boolean = true,
 ): ViewBlurDrawable {
+    val layoutManager = layoutManager ?: throw NullPointerException("Set RecyclerView#layoutManager first")
     return ViewBlurDrawable(
-        this,
-        radius,
-        (layoutManager ?: throw NullPointerException("Set RecyclerView#layoutManager first")).canScrollHorizontally(),
-        layoutManager!!.canScrollVertically(),
-        outline,
-        downscale,
-        blur,
-        clipOut,
+        this, radius,
+        layoutManager.canScrollHorizontally(),
+        layoutManager.canScrollVertically(),
+        outline, downscale, blur, clipOut, followPowerSave,
     ).also { this += it }
 }
