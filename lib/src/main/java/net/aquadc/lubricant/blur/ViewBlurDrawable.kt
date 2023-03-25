@@ -17,6 +17,7 @@ import androidx.annotation.Px
 import androidx.annotation.RequiresApi
 import net.aquadc.lubricant.PostEffect
 import net.aquadc.lubricant.blur.StackBlur.stackBlur
+import net.aquadc.lubricant.defaultSkipEffect
 import net.aquadc.lubricant.outline.OutlineShape
 import net.aquadc.lubricant.outline.RectOutline
 import net.aquadc.lubricant.view.PostEffectRecyclerView
@@ -31,7 +32,7 @@ class ViewBlurDrawable(
     downscale: Int,
     blur: StackBlur = stackBlur(),
     private val clipOut: Boolean = true,
-    private val followPowerSave: Boolean = true,
+    private val skipEffect: () -> Boolean,
 ) : Drawable(), PostEffect {
 
     var outline: OutlineShape = outline
@@ -94,8 +95,7 @@ class ViewBlurDrawable(
             }
         }
 
-    private var powerSave: Boolean =
-        followPowerSave && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !ValueAnimator.areAnimatorsEnabled()
+    private var skipBlur: Boolean = skipEffect()
     override fun draw(canvas: Canvas) {
         if (!updateEnabled())
             return
@@ -172,13 +172,11 @@ class ViewBlurDrawable(
     private fun isEnabled(): Boolean =
 // isVisible == false when our callback/View is absent, INVISIBLE, GONE, or detached.
 // This check would save some miserable cycles in rare scenarios but break some existing screen-shooting code, skip it.
-        !powerSave && !bounds.isEmpty && srcOffsetX < source.getWidth() && srcOffsetY < source.getHeight() &&
+        !skipBlur && !bounds.isEmpty && srcOffsetX < source.getWidth() && srcOffsetY < source.getHeight() &&
             blur.radius > 0 && paint.alpha > 0
     private fun updateEnabled(): Boolean {
-        if (followPowerSave &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            powerSave == ValueAnimator.areAnimatorsEnabled()) { // powerSave != areAnimatorsDisabled
-            powerSave = !powerSave
+        if (skipBlur != skipEffect()) { // powerSave != areAnimatorsDisabled
+            skipBlur = !skipBlur
             invalidateSelf() // source view invalidation falls here through clipOut(), follow
         }
         return isEnabled()
@@ -215,13 +213,13 @@ fun PostEffectRecyclerView.blurDrawable(
     outline: OutlineShape = RectOutline,
     blur: StackBlur = stackBlur(),
     clipOut: Boolean = true,
-    followPowerSave: Boolean = true,
+    skipEffect: () -> Boolean = context.defaultSkipEffect,
 ): ViewBlurDrawable {
     val layoutManager = layoutManager ?: throw NullPointerException("Set RecyclerView#layoutManager first")
     return ViewBlurDrawable(
         this, radius,
         layoutManager.canScrollHorizontally(),
         layoutManager.canScrollVertically(),
-        outline, downscale, blur, clipOut, followPowerSave,
+        outline, downscale, blur, clipOut, skipEffect,
     ).also { this += it }
 }
