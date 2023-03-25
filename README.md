@@ -12,7 +12,7 @@ allprojects {
 
 // app/build.gradle
 repositories {
-    implementation("com.github.Miha-x64:Lubricant:852f8498f1")
+    implementation("com.github.Miha-x64:Lubricant:48ed35fa47")
 }
 ```
 
@@ -24,6 +24,19 @@ Most libraries use RenderScript which shows poor performance to me. Also, most o
 ### Name?
 
 In order to apply a post-effect, you need to lubricate Android SDK heavily. Also, [in Russian, “blurry” and “lubricated” is the same word, as well as “unclear” or “smooth”](https://www.multitran.com/m.exe?s=%D1%81%D0%BC%D0%B0%D0%B7%D0%B0%D0%BD%D0%BD%D1%8B%D0%B9&l1=2&l2=1).
+
+### Status and roadmap
+
+- [x] stack blur algorithm
+- [x] dynamic blur Drawable
+- [x] I use this in production
+- [ ] try to speed up with SIMD instructions
+- [ ] speed up by separating x and y radii and downscaling unscrollable dimension even more
+- [ ] speed up by supporting partial invalidation, redraw, and reblur
+- [ ] try parallel blur
+- [ ] filter and backdrop-filter for vector drawables
+- [ ] SurfaceView and TextureView support
+- [ ] one-liner to match overlay and backdrop instead of setting srcOffsetXY explicitly
 
 ### Architecture
 
