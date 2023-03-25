@@ -93,12 +93,25 @@ class DynamicBlur(
             drawn = draw(this)
             restoreToCount(save)
             if (drawn) {
-                if (Color.alpha(solidColor) == 255)
-                    blur.blurRgb(blurBitmap!!, scaledRadius)
-                else
-                    blur.blurArgb(blurBitmap!!, scaledRadius)
+                blur(solidColor, scaledRadius)
             }
         }
+    }
+//    private var sum = 0L
+//    private var times = 0
+    private fun blur(solidColor: Int, radius: Int) {
+//        var time = System.nanoTime()
+        if (Color.alpha(solidColor) == 255)
+            blur.blurRgb(blurBitmap!!, radius)
+        else
+            blur.blurArgb(blurBitmap!!, radius)
+        /*time = System.nanoTime() - time
+        sum += time
+        times++
+        android.util.Log.i(
+            "DynamicBlur",
+            "$this(${blurBitmap!!.width}x${blurBitmap!!.height} r$radius) in ${time/1000} μs, avg($times) ${sum/times/1000} μs",
+        )*/
     }
 
     private fun configure(width: Int, height: Int) {

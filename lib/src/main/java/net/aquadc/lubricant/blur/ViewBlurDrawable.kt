@@ -76,12 +76,8 @@ class ViewBlurDrawable(
 
     private val paint = Paint(Paint.FILTER_BITMAP_FLAG)
     private val blur = DynamicBlur(blur, radius, downscale, horizontalScroll, verticalScroll) { c ->
-//        var time = System.nanoTime()
         c.translate(-srcOffsetX.toFloat(), -srcOffsetY.toFloat())
-
         source.drawFully(c)
-//        time = System.nanoTime() - time
-//        Log.i("ViewBlurDrawable", "drawn views into buffer in ${time / 1000} us")
         true
     }
 
