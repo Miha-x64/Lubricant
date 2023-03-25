@@ -37,6 +37,9 @@ The Stack Blur Algorithm by Mario Klingemann ported by Yahel Bouaziz found [on S
 
 This class is used to hold a bitmap, and manage downscaling, drawing, and blurring.
 
+Known problem: downscaling kills vector drawable quality in Android versions until [this fix](https://github.com/aosp-mirror/platform_frameworks_base/commit/35289f12d6cb0f0db67489876c805ad4a3cbd5f6).
+To work this around, use `VectorDrawableCompat` explicitly.
+
 #### Layer 3: ViewBlurDrawable, PostEffectView
 
 A ready-to-use drawable taking image from PostEffectView.

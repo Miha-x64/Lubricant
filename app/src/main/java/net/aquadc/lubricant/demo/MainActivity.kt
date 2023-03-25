@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat
 import net.aquadc.lubricant.blur.ViewBlurDrawable
 import net.aquadc.lubricant.view.PostEffectRecyclerView
 
@@ -30,11 +31,12 @@ class MainActivity : Activity() {
         val list = findViewById<PostEffectRecyclerView>(R.id.list)
         list.solidColor = (window.decorView.background as ColorDrawable).color
         list.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-            private val icons = intArrayOf( // https://www.iconfinder.com/iconsets/hawcons
+            // https://www.iconfinder.com/iconsets/hawcons
+            private val icons = intArrayOf(
                 R.drawable.ic_document_cloud,
                 R.drawable.ic_document_sql,
                 R.drawable.ic_error_cloud,
-            )
+            ).map { VectorDrawableCompat.create(resources, it, null) }
             override fun getItemCount(): Int = icons.size
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
                 DumbViewHolder(SquareImageView(parent.context)).also { vh ->
@@ -43,7 +45,9 @@ class MainActivity : Activity() {
                         if (pos >= 0) {
                             val contentBlur = findViewById<MainLayout>(R.id.root).contentBlur
                             AlertDialog.Builder(it.context)
-                                .setView(SquareImageView(it.context).also { it.setImageResource(icons[pos]) })
+                                .setView(SquareImageView(it.context).also {
+                                    it.setImageDrawable(icons[pos]!!.constantState!!.newDrawable())
+                                })
                                 .setOnDismissListener {
                                     ObjectAnimator.ofInt(contentBlur, ViewBlurDrawable.RADIUS, 20.dp, 0).setDuration(200).start()
                                 }
@@ -53,7 +57,7 @@ class MainActivity : Activity() {
                     }
                 }
             override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-                (holder.itemView as ImageView).setImageResource(icons[position])
+                (holder.itemView as ImageView).setImageDrawable(icons[position])
             }
         }
     }
