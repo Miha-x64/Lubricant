@@ -30,6 +30,7 @@ In order to apply a post-effect, you need to lubricate Android SDK heavily. Also
 - [x] stack blur algorithm
 - [x] dynamic blur Drawable
 - [x] I use this in production
+- [ ] add outline clipping and elevation support with PixelCopy
 - [ ] try to speed up with SIMD instructions
 - [ ] speed up by separating x and y radii and downscaling unscrollable dimension even more
 - [ ] speed up by supporting partial invalidation, redraw, and reblur
